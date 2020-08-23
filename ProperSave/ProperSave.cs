@@ -35,7 +35,7 @@ namespace ProperSave
 
     [NetworkCompatibility(CompatibilityLevel.NoNeedForSync)]
     [BepInDependency("com.bepis.r2api", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin("com.KingEnderBrine.ProperSave", "Proper Save", "2.2.0")]
+    [BepInPlugin("com.KingEnderBrine.ProperSave", "Proper Save", "2.2.2")]
     public class ProperSave : BaseUnityPlugin
     {
         private static WeakReference<GameObject> lobbyButton = new WeakReference<GameObject>(null);
@@ -75,8 +75,6 @@ namespace ProperSave
             IsTLCDefined = IsOldTLCDefined || BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("com.blazingdrummer.TemporaryLunarCoins");
             IsSIGUIDefined = BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("com.Phedg1Studios.StartingItemsGUI");
 
-            RegisterLanguage();
-
             CommandHelper.AddToConsoleWhenReady();
 
             if (IsOldTLCDefined)
@@ -111,33 +109,6 @@ namespace ProperSave
         }
 
         #region Main registration
-        private void RegisterLanguage()
-        {
-            var flag = false;
-            foreach (var file in Directory.GetFiles(ExecutingDirectory, "lang_*.json", SearchOption.AllDirectories))
-            {
-                flag = true;
-                var languageToken = Regex.Match(file, ".+lang_(?<lang>[a-zA-Z]+).json\\Z").Groups["lang"].Value;
-                var tokens = JSON.Parse(File.ReadAllText(file));
-
-                if (languageToken == "en")
-                {
-                    foreach (var key in tokens.Keys)
-                    {
-                        LanguageAPI.Add(key, tokens[key].Value);
-                    }
-                }
-                foreach (var key in tokens.Keys)
-                {
-                    LanguageAPI.Add(key, tokens[key].Value, languageToken);
-                }
-            }
-            if (!flag)
-            {
-                Debug.LogWarning("Localizaiton files not found");
-            }
-        }
-
         private void RegisterGameLoading()
         {
             //Replace with custom run load
@@ -548,7 +519,11 @@ namespace ProperSave
             {
                 return null;
             }
-            var gameMode = PreGameController.instance ? PreGameController.instance.gameModeIndex : Run.instance.gameModeIndex;
+            var gameMode = PreGameController.instance ? PreGameController.instance.gameModeIndex : Run.instance ? Run.instance.gameModeIndex : GameModeIndex.Invalid;
+            if (gameMode == GameModeIndex.Invalid)
+            {
+                return null;
+            }
             if (usersCount == 1)
             {
                 var profile = LocalUserManager.readOnlyLocalUsersList[0].userProfile.fileName.Replace(".xml", "");
